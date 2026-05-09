@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nexus Enterprise | Team Task Manager</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css?v=4">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- SortableJS (Drag and Drop) -->
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@latest/Sortable.min.js"></script>
+    <!-- FullCalendar -->
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.15/index.global.min.js'></script>
+    <!-- FontAwesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body class="dark-mode">
+    <div id="toast-container"></div>
+
+    <!-- AUTHENTICATION VIEW -->
+    <div id="auth-view" class="view-container active">
+        <div class="auth-box glass-panel">
+            <h1 class="logo glow-text"><i class="fa-solid fa-bolt"></i> Nexus</h1>
+            <p class="subtitle">Enterprise Task Management</p>
+
+            <div class="tabs">
+                <button class="tab-btn active" onclick="switchAuthTab('login')">Login</button>
+                <button class="tab-btn" onclick="switchAuthTab('register')">Register</button>
+            </div>
+
+            <form id="login-form" class="auth-form active">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="login-username" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="login-password" required>
+                </div>
+                <div id="login-error" class="error-msg"></div>
+                <button type="submit" class="primary-btn full-width">Sign In</button>
+            </form>
+
+            <form id="register-form" class="auth-form">
+                <div class="input-group">
+                    <label>Username</label>
+                    <input type="text" id="reg-username" required minlength="3">
+                </div>
+                <div class="input-group">
+                    <label>Email</label>
+                    <input type="email" id="reg-email" required>
+                </div>
+                <div class="input-group">
+                    <label>Password</label>
+                    <input type="password" id="reg-password" required minlength="8">
+                    <div class="validation-hints">
+                        <span id="hint-len" class="hint">8+ chars</span>
+                        <span id="hint-num" class="hint">1 number</span>
+                        <span id="hint-let" class="hint">1 letter</span>
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Role</label>
+                    <select id="reg-role">
+                        <option value="EMPLOYEE">Employee</option>
+                        <option value="MANAGER">Manager</option>
+                        <option value="ADMIN">Admin</option>
+                    </select>
+                </div>
+                <div id="reg-error" class="error-msg"></div>
+                <button type="submit" class="primary-btn full-width">Create Account</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- MAIN APP VIEW -->
+    <div id="app-view" class="view-container">
+        <!-- SIDEBAR NAV -->
+        <aside class="sidebar glass-panel">
+            <div class="sidebar-brand">
+                <h2 class="logo glow-text"><i class="fa-solid fa-bolt"></i> Nexus</h2>
+            </div>
+            <nav class="side-nav">
+                <span id="nav-dashboard" class="nav-link active" onclick="switchMainView('dashboard')"><i class="fa-solid fa-chart-pie"></i> Dashboard</span>
+                <span id="nav-projects" class="nav-link" onclick="switchMainView('projects')"><i class="fa-solid fa-folder-open"></i> Projects</span>
+                <span id="nav-tasks" class="nav-link" onclick="switchMainView('tasks')"><i class="fa-solid fa-list-check"></i> Kanban Board</span>
+                <span id="nav-calendar" class="nav-link" onclick="switchMainView('calendar')"><i class="fa-solid fa-calendar-days"></i> Calendar</span>
+                <span id="nav-reports" class="nav-link admin-only" onclick="switchMainView('reports')"><i class="fa-solid fa-chart-line"></i> Analytics</span>
+            </nav>
+            <div class="sidebar-footer">
+                <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i> Theme</button>
+                <div class="user-profile">
+                    <div class="avatar"><i class="fa-solid fa-user"></i></div>
+                    <div class="user-info">
+                        <span id="user-display" class="user-name"></span>
+                        <span id="user-role" class="user-role-badge"></span>
+                    </div>
+                </div>
+                <button class="logout-btn full-width" onclick="logout()"><i class="fa-solid fa-arrow-right-from-bracket"></i> Logout</button>
+            </div>
+        </aside>
+
+        <!-- MAIN CONTENT AREA -->
+        <main class="main-content">
+            <header class="top-header glass-panel">
+                <div class="search-bar">
+                    <i class="fa-solid fa-search"></i>
+                    <input type="text" id="global-search" placeholder="Search tasks, projects...">
+                </div>
+                <div class="header-actions">
+                    <button class="primary-btn admin-manager-only" onclick="openModal('task-modal')"><i class="fa-solid fa-plus"></i> Create Task</button>
+                    <div class="notification-bell" onclick="toggleNotifications()">
+                        <i class="fa-solid fa-bell"></i>
+                        <span class="badge-count" id="notif-count">0</span>
+                    </div>
+                </div>
+            </header>
+
+            <!-- NOTIFICATION DROPDOWN -->
+            <div id="notification-dropdown" class="glass-panel hidden">
+                <h3>Notifications</h3>
+                <div id="notif-list"></div>
+            </div>
+
+            <!-- DASHBOARD SECTION -->
+            <section id="dashboard-section" class="main-section active">
+                <!-- TOP CARDS -->
+                <div class="stats-grid">
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon" style="color: #6366f1;"><i class="fa-solid fa-folder"></i></div>
+                        <div class="stat-data">
+                            <h3>Total Projects</h3>
+                            <p id="stat-projects" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon" style="color: #ec4899;"><i class="fa-solid fa-list"></i></div>
+                        <div class="stat-data">
+                            <h3>Total Tasks</h3>
+                            <p id="stat-total" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon" style="color: #10b981;"><i class="fa-solid fa-check-circle"></i></div>
+                        <div class="stat-data">
+                            <h3>Completed</h3>
+                            <p id="stat-completed" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon" style="color: #f59e0b;"><i class="fa-solid fa-clock"></i></div>
+                        <div class="stat-data">
+                            <h3>Pending</h3>
+                            <p id="stat-pending" class="stat-number">0</p>
+                        </div>
+                    </div>
+                    <div class="stat-card glass-panel">
+                        <div class="stat-icon" style="color: #ef4444;"><i class="fa-solid fa-triangle-exclamation"></i></div>
+                        <div class="stat-data">
+                            <h3>Overdue</h3>
+                            <p id="stat-overdue" class="stat-number">0</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="dashboard-layout">
+                    <!-- MAIN PANEL -->
+                    <div class="dash-main">
+                        <div class="glass-panel chart-container">
+                            <h3>Task Progress Overview</h3>
+                            <canvas id="progressChart"></canvas>
+                        </div>
+                        <div class="glass-panel mt-4">
+                            <h3>Upcoming Deadlines</h3>
+                            <div id="dash-deadlines" class="timeline-list"></div>
+                        </div>
+                    </div>
+                    <!-- SIDE PANEL -->
+                    <div class="dash-sidebar">
+                        <div class="glass-panel mb-4">
+                            <h3>Team Members</h3>
+                            <div id="dash-team" class="team-list"></div>
+                        </div>
+                        <div class="glass-panel">
+                            <h3>Recent Activity</h3>
+                            <div id="dash-activity" class="activity-feed"></div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- PROJECTS SECTION -->
+            <section id="projects-section" class="main-section">
+                <div class="section-header">
+                    <h2 class="section-title">Project Portfolios</h2>
+                    <button class="primary-btn admin-manager-only" onclick="openNewProjectModal()">+ New Project</button>
+                </div>
+                <div id="projects-grid" class="projects-grid"></div>
+            </section>
+
+            <!-- TASKS (KANBAN) SECTION -->
+            <section id="tasks-section" class="main-section">
+                <div class="section-header">
+                    <h2 class="section-title">Kanban Board</h2>
+                    <div class="filters">
+                        <button class="filter-btn active" onclick="filterTasks('ALL')">All</button>
+                        <button class="filter-btn" onclick="filterTasks('MY_TASKS')">My Tasks</button>
+                        <button class="filter-btn" onclick="filterTasks('HIGH_PRIORITY')">High Priority</button>
+                    </div>
+                </div>
+                <div class="kanban-board">
+                    <div class="kanban-col glass-panel">
+                        <h3 class="col-title"><i class="fa-regular fa-circle"></i> To Do <span id="count-TODO" class="count-badge">0</span></h3>
+                        <div class="task-list" id="TODO"></div>
+                    </div>
+                    <div class="kanban-col glass-panel">
+                        <h3 class="col-title"><i class="fa-solid fa-spinner fa-spin-pulse"></i> In Progress <span id="count-IN_PROGRESS" class="count-badge">0</span></h3>
+                        <div class="task-list" id="IN_PROGRESS"></div>
+                    </div>
+                    <div class="kanban-col glass-panel">
+                        <h3 class="col-title"><i class="fa-solid fa-circle-check"></i> Done <span id="count-DONE" class="count-badge">0</span></h3>
+                        <div class="task-list" id="DONE"></div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- CALENDAR SECTION -->
+            <section id="calendar-section" class="main-section">
+                <div class="glass-panel" style="padding: 2rem;">
+                    <div id="calendar"></div>
+                </div>
+            </section>
+
+            <!-- REPORTS SECTION -->
+            <section id="reports-section" class="main-section">
+                <h2 class="section-title">Analytics & Reports</h2>
+                <div class="grid-2">
+                    <div class="glass-panel chart-container">
+                        <h3>Employee Productivity</h3>
+                        <canvas id="productivityChart"></canvas>
+                    </div>
+                    <div class="glass-panel chart-container">
+                        <h3>Completion Rate</h3>
+                        <canvas id="completionChart"></canvas>
+                    </div>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- MODALS -->
+    <!-- Project Creation Modal -->
+    <div id="project-modal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Create Project</h2>
+                <span class="close-btn" onclick="closeModal('project-modal')">&times;</span>
+            </div>
+            <form id="project-form">
+                <input type="hidden" id="proj-id">
+                <div class="input-group">
+                    <label>Project Title</label>
+                    <input type="text" id="proj-title" required>
+                </div>
+                <div class="input-group">
+                    <label>Description</label>
+                    <textarea id="proj-desc" rows="3"></textarea>
+                </div>
+                <div class="input-group">
+                    <label>Deadline</label>
+                    <input type="date" id="proj-deadline">
+                </div>
+                <div class="input-group">
+                    <label>Team Members (Hold Ctrl/Cmd to select multiple)</label>
+                    <select id="proj-team" multiple style="height: 100px;"></select>
+                </div>
+                <div id="proj-error" class="error-msg"></div>
+                <button type="submit" class="primary-btn full-width">Launch Project</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Creation Modal -->
+    <div id="task-modal" class="modal-overlay">
+        <div class="modal-content glass-panel">
+            <div class="modal-header">
+                <h2>Create Task</h2>
+                <span class="close-btn" onclick="closeModal('task-modal')">&times;</span>
+            </div>
+            <form id="task-form">
+                <div class="input-group">
+                    <label>Title</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Priority</label>
+                        <select id="task-priority">
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM" selected>Medium</option>
+                            <option value="HIGH">High</option>
+                            <option value="CRITICAL">Critical</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Est. Hours</label>
+                        <input type="number" step="0.1" id="task-hours">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Project</label>
+                    <select id="task-project" required></select>
+                </div>
+                <div class="grid-2">
+                    <div class="input-group">
+                        <label>Assignee</label>
+                        <select id="task-assignee"></select>
+                    </div>
+                    <div class="input-group">
+                        <label>Due Date</label>
+                        <input type="date" id="task-due">
+                    </div>
+                </div>
+                <div class="input-group">
+                    <label>Tags (Comma separated)</label>
+                    <input type="text" id="task-tags">
+                </div>
+                <div class="input-group">
+                    <label>Attachment (Optional)</label>
+                    <input type="file" id="task-file">
+                </div>
+                <div id="task-error" class="error-msg"></div>
+                <button type="submit" class="primary-btn full-width">Create Task</button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Task Detail Modal -->
+    <div id="task-detail-modal" class="modal-overlay">
+        <div class="modal-content glass-panel" style="max-width: 800px;">
+            <div class="modal-header">
+                <h2 id="detail-title">Task Title</h2>
+                <div class="header-badges">
+                    <span id="detail-priority-badge" class="badge"></span>
+                    <span id="detail-status-badge" class="badge badge-outline"></span>
+                </div>
+                <span class="close-btn" onclick="closeModal('task-detail-modal')">&times;</span>
+            </div>
+            
+            <div class="detail-grid">
+                <!-- Left Side: Content & Comments -->
+                <div class="detail-main">
+                    <div class="detail-tags" id="detail-tags"></div>
+                    <p id="detail-desc" class="detail-desc"></p>
+                    
+                    <div id="detail-attachment-box" class="attachment-box hidden">
+                        <i class="fa-solid fa-paperclip"></i> <a id="detail-attachment-link" href="#" target="_blank">View Attachment</a>
+                    </div>
+
+                    <!-- Subtasks -->
+                    <div class="subtasks-section">
+                        <h3>Checklist</h3>
+                        <div class="progress-bar-container">
+                            <div class="progress-bar-fill" id="subtask-progress"></div>
+                        </div>
+                        <div id="subtasks-list"></div>
+                        <div class="add-subtask">
+                            <input type="text" id="new-subtask-input" placeholder="Add checklist item...">
+                            <button onclick="addSubtask()" class="icon-btn"><i class="fa-solid fa-plus"></i></button>
+                        </div>
+                    </div>
+
+                    <!-- Comments -->
+                    <h3 class="comments-title"><i class="fa-regular fa-comments"></i> Discussion</h3>
+                    <div id="comments-list" class="comments-list"></div>
+                    <form id="comment-form" class="comment-form">
+                        <input type="hidden" id="comment-task-id">
+                        <input type="text" id="comment-text" placeholder="Write a comment..." required>
+                        <button type="submit" class="primary-btn"><i class="fa-solid fa-paper-plane"></i></button>
+                    </form>
+                </div>
+
+                <!-- Right Side: Metadata -->
+                <div class="detail-sidebar glass-panel">
+                    <div class="meta-item">
+                        <label><i class="fa-solid fa-folder"></i> Project</label>
+                        <span id="detail-project"></span>
+                    </div>
+                    <div class="meta-item">
+                        <label><i class="fa-solid fa-user-pen"></i> Reporter</label>
+                        <span id="detail-reporter"></span>
+                    </div>
+                    <div class="meta-item">
+                        <label><i class="fa-solid fa-user-check"></i> Assignee</label>
+                        <span id="detail-assignee"></span>
+                    </div>
+                    <div class="meta-item">
+                        <label><i class="fa-solid fa-calendar"></i> Due Date</label>
+                        <span id="detail-due"></span>
+                    </div>
+                    <div class="meta-item">
+                        <label><i class="fa-solid fa-clock"></i> Est. Hours</label>
+                        <span id="detail-hours"></span>
+                    </div>
+                    <div class="meta-item admin-manager-only mt-4">
+                        <button class="danger-btn full-width" onclick="deleteCurrentTask()"><i class="fa-solid fa-trash"></i> Delete Task</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="app.js?v=5"></script>
+</body>
+</html>
