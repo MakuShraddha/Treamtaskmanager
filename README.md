@@ -1,4 +1,4 @@
-# Nexus Enterprise Task Manager
+# Team Task Manager
 
 A comprehensive Task and Project Management system featuring a Django backend and a responsive HTML/CSS/JavaScript frontend. It includes full CRUD operations for projects, tasks, and users, with role-based access control (RBAC).
 
