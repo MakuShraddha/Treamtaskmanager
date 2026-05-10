@@ -89,10 +89,21 @@ class ActivityLogViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = ActivityLogSerializer
     permission_classes = [permissions.IsAuthenticated]
 
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = User.objects.all()
+class IsAdmin(permissions.BasePermission):
+    def has_permission(self, request, view):
+        role = getattr(request.user, 'role', None)
+        return bool(request.user and request.user.is_authenticated and role == 'ADMIN')
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by('-date_joined')
     serializer_class = UserSerializer
-    permission_classes = [permissions.IsAuthenticated]
+    
+    def get_permissions(self):
+        if self.action in ['update', 'partial_update']:
+            permission_classes = [IsAdmin]
+        else:
+            permission_classes = [permissions.IsAuthenticated]
+        return [permission() for permission in permission_classes]
 
 @api_view(['POST'])
 @permission_classes([permissions.AllowAny])
@@ -100,11 +111,24 @@ def register_user(request):
     serializer = RegisterSerializer(data=request.data)
     if serializer.is_valid():
         user = serializer.save()
-        token, _ = Token.objects.get_or_create(user=user)
-        return Response({
-            "user": UserSerializer(user).data,
-            "token": token.key
-        }, status=status.HTTP_201_CREATED)
+        if User.objects.count() == 1:
+            user.is_active = True
+            user.role = 'ADMIN'
+            user.is_superuser = True
+            user.is_staff = True
+            user.save()
+            token, _ = Token.objects.get_or_create(user=user)
+            return Response({
+                "user": UserSerializer(user).data,
+                "token": token.key,
+                "message": "First user auto-approved as Admin."
+            }, status=status.HTTP_201_CREATED)
+        else:
+            user.is_active = False
+            user.save()
+            return Response({
+                "message": "Registration successful. Please wait for an admin to verify and grant access to your account."
+            }, status=status.HTTP_201_CREATED)
     return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['POST'])
@@ -121,6 +145,11 @@ def login_user(request):
             "user": UserSerializer(user).data,
             "token": token.key
         })
+    else:
+        user_obj = User.objects.filter(username=username).first()
+        if user_obj and not user_obj.is_active and user_obj.check_password(password):
+            return Response({"error": "Account pending admin approval."}, status=status.HTTP_403_FORBIDDEN)
+            
     return Response({"error": "Invalid Credentials. Please check your username and password."}, status=status.HTTP_400_BAD_REQUEST)
 
 @api_view(['GET'])

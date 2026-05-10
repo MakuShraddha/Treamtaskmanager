@@ -44,6 +44,7 @@ function switchMainView(viewId) {
     if(viewId === 'tasks') loadTasks();
     if(viewId === 'calendar') setTimeout(renderCalendar, 100);
     if(viewId === 'reports') setTimeout(renderReports, 100);
+    if(viewId === 'team') loadTeam();
 }
 
 function toggleTheme() {
@@ -118,10 +119,17 @@ document.getElementById('register-form').addEventListener('submit', async (e) =>
             body: JSON.stringify(payload)
         });
         const data = await res.json();
-        if (res.ok) loginSuccess(data);
-        else {
+        if (res.ok) {
+            if (data.token) {
+                loginSuccess(data);
+            } else {
+                showToast(data.message || 'Registration successful.');
+                switchAuthTab('login');
+                document.getElementById('register-form').reset();
+            }
+        } else {
             let errText = '';
-            for (let field in data) errText += `${data[field][0]}\n`;
+            for (let field in data) errText += `${data[field][0] || data[field]}\n`;
             errorDiv.innerText = errText;
         }
     } catch (err) { errorDiv.textContent = 'Server connection failed.'; }
@@ -633,3 +641,34 @@ document.getElementById('task-form').addEventListener('submit', async(e) => {
 
 // Init
 checkAuth();
+
+// --- TEAM MANAGEMENT ---
+async function loadTeam() {
+    const users = await apiFetch('/users/');
+    if(!users) return;
+    const tbody = document.getElementById('team-table-body');
+    tbody.innerHTML = users.map(u => `
+        <tr style="border-bottom: 1px solid var(--glass-border);">
+            <td style="padding: 10px;">${u.username}</td>
+            <td style="padding: 10px;">${u.email}</td>
+            <td style="padding: 10px;">${u.role}</td>
+            <td style="padding: 10px;">
+                <span class="badge ${u.is_active ? 'bg-LOW' : 'bg-MEDIUM'}">${u.is_active ? 'Active' : 'Pending'}</span>
+            </td>
+            <td style="padding: 10px;">
+                ${!u.is_active ? `<button class="primary-btn" style="padding: 4px 10px; font-size: 0.8rem;" onclick="approveUser(${u.id})">Approve</button>` : ''}
+            </td>
+        </tr>
+    `).join('');
+}
+
+async function approveUser(id) {
+    const res = await apiFetch(`/users/${id}/`, 'PATCH', { is_active: true });
+    if(res && !res.detail) {
+        showToast('User approved successfully.');
+        loadTeam();
+    } else {
+        showToast('Error approving user.');
+    }
+}
+

@@ -87,6 +87,7 @@
                 <span id="nav-tasks" class="nav-link" onclick="switchMainView('tasks')"><i class="fa-solid fa-list-check"></i> Kanban Board</span>
                 <span id="nav-calendar" class="nav-link" onclick="switchMainView('calendar')"><i class="fa-solid fa-calendar-days"></i> Calendar</span>
                 <span id="nav-reports" class="nav-link admin-only" onclick="switchMainView('reports')"><i class="fa-solid fa-chart-line"></i> Analytics</span>
+                <span id="nav-team" class="nav-link admin-only" onclick="switchMainView('team')"><i class="fa-solid fa-users-gear"></i> Team Management</span>
             </nav>
             <div class="sidebar-footer">
                 <button class="theme-toggle" onclick="toggleTheme()"><i class="fa-solid fa-moon"></i> Theme</button>
@@ -169,7 +170,9 @@
                     <div class="dash-main">
                         <div class="glass-panel chart-container">
                             <h3>Task Progress Overview</h3>
-                            <canvas id="progressChart"></canvas>
+                            <div style="position: relative; height: 300px; width: 100%;">
+                                <canvas id="progressChart"></canvas>
+                            </div>
                         </div>
                         <div class="glass-panel mt-4">
                             <h3>Upcoming Deadlines</h3>
@@ -238,12 +241,37 @@
                 <div class="grid-2">
                     <div class="glass-panel chart-container">
                         <h3>Employee Productivity</h3>
-                        <canvas id="productivityChart"></canvas>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="productivityChart"></canvas>
+                        </div>
                     </div>
                     <div class="glass-panel chart-container">
                         <h3>Completion Rate</h3>
-                        <canvas id="completionChart"></canvas>
+                        <div style="position: relative; height: 300px; width: 100%;">
+                            <canvas id="completionChart"></canvas>
+                        </div>
                     </div>
+                </div>
+            </section>
+
+            <!-- TEAM MANAGEMENT SECTION -->
+            <section id="team-section" class="main-section">
+                <h2 class="section-title">Team Management</h2>
+                <div class="glass-panel" style="padding: 1.5rem; overflow-x: auto;">
+                    <table style="width: 100%; text-align: left; border-collapse: collapse;">
+                        <thead>
+                            <tr style="border-bottom: 1px solid var(--glass-border);">
+                                <th style="padding: 10px; color: var(--text-muted);">User</th>
+                                <th style="padding: 10px; color: var(--text-muted);">Email</th>
+                                <th style="padding: 10px; color: var(--text-muted);">Role</th>
+                                <th style="padding: 10px; color: var(--text-muted);">Status</th>
+                                <th style="padding: 10px; color: var(--text-muted);">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="team-table-body">
+                            <!-- Users injected here -->
+                        </tbody>
+                    </table>
                 </div>
             </section>
         </main>

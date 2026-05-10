@@ -172,7 +172,7 @@ input:focus, select:focus, textarea:focus { border-color: var(--primary); box-sh
 .stat-number { font-size: 1.8rem; font-weight: 800; margin-top: 5px; }
 
 .dashboard-layout { display: grid; grid-template-columns: 2.5fr 1fr; gap: 2rem; }
-.dash-main .chart-container { padding: 1.5rem; height: 350px; }
+.chart-container { padding: 1.5rem; height: 350px; position: relative; }
 .dash-sidebar .glass-panel { padding: 1.5rem; }
 
 /* Timeline & Feed */
