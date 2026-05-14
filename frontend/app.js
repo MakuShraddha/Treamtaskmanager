@@ -1,4 +1,4 @@
-const API_URL = 'http://127.0.0.1:8000/api';
+const API_URL = window.location.origin + '/api';
 let token = localStorage.getItem('token');
 let user = JSON.parse(localStorage.getItem('user'));
 let allTasks = [];
@@ -97,10 +97,19 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
             method: 'POST', headers: {'Content-Type': 'application/json'},
             body: JSON.stringify({username, password})
         });
-        const data = await res.json();
+        const text = await res.text();
+        let data;
+        try {
+            data = JSON.parse(text);
+        } catch {
+            errorDiv.textContent = `Server error (${res.status}).`;
+            return;
+        }
         if (res.ok) loginSuccess(data);
-        else errorDiv.textContent = data.error || 'Login failed.';
-    } catch (err) { errorDiv.textContent = 'Server connection failed.'; }
+        else errorDiv.textContent = data.error || `Login failed (${res.status}).`;
+    } catch (err) {
+        errorDiv.textContent = `Server connection failed: ${err.message}`;
+    }
 });
 
 document.getElementById('register-form').addEventListener('submit', async (e) => {
